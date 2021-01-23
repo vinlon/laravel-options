@@ -1,6 +1,7 @@
 {
   "name": "vinlon/laravel-options",
   "description": "Global key value storage",
+  "license": "MIT",
   "keywords": [
     "laravel-options",
     "options",
