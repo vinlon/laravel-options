@@ -1,0 +1,27 @@
+{
+  "name": "vinlon/laravel-options",
+  "description": "Global key value storage",
+  "keywords": [
+    "laravel-options",
+    "options",
+    "opt"
+  ],
+  "require-dev": {
+    "laravel/framework": "^7.30"
+  },
+  "autoload": {
+    "files": [
+      "src/helpers.php"
+    ],
+    "psr-4": {
+      "Vinlon\\Laravel\\Options\\": "src"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "Vinlon\\Laravel\\Options\\OptionsServiceProvider"
+      ]
+    }
+  }
+}
