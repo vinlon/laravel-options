@@ -3,8 +3,6 @@
 
 namespace Vinlon\Laravel\Options;
 
-use MongoDB\Driver\Query;
-
 class OptionsManager
 {
     private $prefix = '';
@@ -51,10 +49,13 @@ class OptionsManager
      */
     public function set($key, $value)
     {
-        Option::query()->updateOrInsert([
-            'key' => $this->getPrefixedKey($key),
-             'value' => $value,
-        ]);
+        $key = $this->getPrefixedKey($key);
+        $option = Option::query()
+            ->where('key', $key)
+            ->firstOrNew(['key' => $key])
+        ;
+        $option->value = $value;
+        $option->save();
     }
 
     /**
@@ -85,29 +86,38 @@ class OptionsManager
                 $key = substr($key, strlen($this->prefix));
             }
             return [$key => $option->value];
-        });
+        })->toArray();
     }
 
     public function batchSet($keyValuePairs)
     {
-        $existedValues = $this->batchGet(array_keys($keyValuePairs), false);
-        $pendingInsert = $pendingUpdate = [];
+        $prefixedKeys = array_map(function ($key) {
+            return $this->getPrefixedKey($key);
+        }, array_keys($keyValuePairs));
+
+        $existedValues = Option::query()
+            ->whereIn('key', $prefixedKeys)
+            ->get()
+            ->mapWithKeys(function (Option $option) {
+                return [$option->key => $option];
+            });
+
+        // TODO: 暂时不考虑性能问题
         foreach ($keyValuePairs as $key => $value) {
             $key = $this->getPrefixedKey($key);
-            if (array_key_exists($key, $existedValues)) {
-                if ($value != $existedValues[$key]) {
-                    $pendingUpdate[] = ['key' => $key, 'value' => $value];
-
+            /** @var Option $existedValue */
+            $existedValue = $existedValues->get($key);
+            if ($existedValue) {
+                if ($value != $existedValue->value) {
+                    $existedValue->value = $value;
+                    $existedValue->save();
                 }
             } else {
-                $pendingInsert[] = ['key' => $key, 'value' => $value];
+                $option = new Option();
+                $option->key = $key;
+                $option->value = $value;
+                $option->save();
             }
-        }
-        if (count($pendingInsert) > 0) {
-            Option::query()->insert($pendingInsert);
-        }
-        if (count($pendingUpdate) > 0) {
-            Option::query()->update($pendingUpdate);
         }
     }
 
