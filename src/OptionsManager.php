@@ -52,8 +52,7 @@ class OptionsManager
         $key = $this->getPrefixedKey($key);
         $option = Option::query()
             ->where('key', $key)
-            ->firstOrNew(['key' => $key])
-        ;
+            ->firstOrNew(['key' => $key]);
         $option->value = $value;
         $option->save();
     }
@@ -73,9 +72,7 @@ class OptionsManager
      */
     public function batchGet($keys, $removePrefix = true)
     {
-        $prefixedKeys = array_map(function ($key) {
-            return $this->getPrefixedKey($key);
-        }, $keys);
+        $prefixedKeys = $this->getPrefixedKeys($keys);
         $options = Option::query()
             ->whereIn('key', $prefixedKeys)
             ->get();
@@ -89,12 +86,12 @@ class OptionsManager
         })->toArray();
     }
 
+    /**
+     * @param array $keyValuePairs
+     */
     public function batchSet($keyValuePairs)
     {
-        $prefixedKeys = array_map(function ($key) {
-            return $this->getPrefixedKey($key);
-        }, array_keys($keyValuePairs));
-
+        $prefixedKeys = $this->getPrefixedKeys(array_keys($keyValuePairs));
         $existedValues = Option::query()
             ->whereIn('key', $prefixedKeys)
             ->get()
@@ -121,8 +118,33 @@ class OptionsManager
         }
     }
 
+    /**
+     * @param string $key
+     */
+    public function del($key)
+    {
+        $key = $this->getPrefixedKey($key);
+        Option::query()->where('key', $key)->delete();
+    }
+
+    /**
+     * @param string[] $keys
+     */
+    public function batchDel($keys)
+    {
+        $keys = $this->getPrefixedKeys($keys);
+        Option::query()->whereIn('key', $keys)->delete();
+    }
+
     private function getPrefixedKey($key)
     {
         return $this->prefix . $key;
+    }
+
+    private function getPrefixedKeys($keys)
+    {
+        return array_map(function ($key) {
+            return $this->getPrefixedKey($key);
+        }, $keys);
     }
 }
